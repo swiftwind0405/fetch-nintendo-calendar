@@ -31,12 +31,25 @@ export async function GET(request: Request) {
     // 从 URL 获取目标日期参数
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date') || '2025-06-29'; // 默认值为 2025-06-29
-    
-    // 从日期中提取年月
-    const [year, month] = date.split('-');
+
+    // 验证日期格式
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(date)) {
+      return NextResponse.json({ error: '日期格式无效，请使用 YYYY-MM-DD 格式' }, { status: 400 });
+    }
+
+    // 从日期中提取年月，并确保月份是整数（去掉前导零）
+    const [year, monthWithZero] = date.split('-');
+    const month = parseInt(monthWithZero, 10);
+
+    if (isNaN(month) || month < 1 || month > 12) {
+      return NextResponse.json({ error: '月份无效，必须是 1-12 之间的数字' }, { status: 400 });
+    }
     
     console.log('开始获取 Nintendo Museum 日历数据...');
     console.log('目标日期:', date);
+    console.log('年份:', year);
+    console.log('月份:', month);
     console.log('使用的 XSRF Token:', process.env.XSRF_TOKEN);
     console.log('使用的 Cookie:', process.env.COOKIE);
     
@@ -91,7 +104,6 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({ 
-      success: true, 
       data: filteredData, 
       canApply: _canApply, 
       message: _canApply ? '🎉🎊 快买! ✨' : '😔 暂时不可以买 ❌',
