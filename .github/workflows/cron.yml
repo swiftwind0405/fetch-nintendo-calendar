@@ -12,5 +12,5 @@ jobs:
       - name: Call API
         run: |
           echo "开始执行定时任务..."
-          curl -H "Authorization: Bearer ${{ secrets.CRON_SECRET_KEY }}" https://fetch-nintendo-calendar.vercel.app/api/cron
+          curl -H "Authorization: Bearer ${{ secrets.CRON_SECRET_KEY }}" https://你的域名/api/cron
           echo "定时任务执行完成" 
