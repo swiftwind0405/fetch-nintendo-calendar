@@ -30,13 +30,13 @@ export async function GET(request: Request) {
   try {
     // 从 URL 获取目标日期参数
     const { searchParams } = new URL(request.url);
-    const targetDate = searchParams.get('targetDate') || '2025-06-29'; // 默认值为 2025-06-29
+    const date = searchParams.get('date') || '2025-06-29'; // 默认值为 2025-06-29
     
     // 从日期中提取年月
-    const [year, month] = targetDate.split('-');
+    const [year, month] = date.split('-');
     
     console.log('开始获取 Nintendo Museum 日历数据...');
-    console.log('目标日期:', targetDate);
+    console.log('目标日期:', date);
     console.log('使用的 XSRF Token:', process.env.XSRF_TOKEN);
     console.log('使用的 Cookie:', process.env.COOKIE);
     
@@ -74,10 +74,10 @@ export async function GET(request: Request) {
 
     const {data} = await response.json();
     
-    const filteredData: CalendarDay = data.calendar[targetDate];
+    const filteredData: CalendarDay = data.calendar[date];
     
     if (!filteredData) {
-      throw new Error(`未找到日期 ${targetDate} 的数据`);
+      throw new Error(`未找到日期 ${date} 的数据`);
     }
     
     console.log('过滤后的数据:', JSON.stringify(filteredData, null, 2));
@@ -86,7 +86,7 @@ export async function GET(request: Request) {
     
     // 只在可以购买时发送通知
     if (_canApply) {
-      const message = `🎉 可以购买啦！\n\n日期: ${targetDate}\n\n详细信息:\n${JSON.stringify(filteredData, null, 2)}\n\n🎊 快去买票吧！✨`;
+      const message = `🎉 可以购买啦！\n\n日期: ${date}\n\n详细信息:\n${JSON.stringify(filteredData, null, 2)}\n\n🎊 快去买票吧！✨`;
       await sendTelegramMessage(message);
     }
 

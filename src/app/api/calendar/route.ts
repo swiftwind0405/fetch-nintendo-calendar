@@ -1,15 +1,40 @@
-import { canApply } from '@/app/util';
-import { CalendarDay } from '@/types/calendar';
 import { NextResponse } from 'next/server';
+import { CalendarData, CalendarDay } from '@/types/calendar';
+import { canApply } from '@/app/util';
 
-export async function GET() {
-  console.log('开始获取 Nintendo Museum 日历数据...');
-  console.log('使用的 XSRF Token:', process.env.XSRF_TOKEN);
-  console.log('使用的 Cookie:', process.env.COOKIE);
-
+export async function GET(request: Request) {
   try {
+    // 从 URL 获取目标日期参数
+    const { searchParams } = new URL(request.url);
+    const date = searchParams.get('date');
+
+    if (!date) {
+      return NextResponse.json({ error: '请提供日期参数 (date)' }, { status: 400 });
+    }
+
+    // 验证日期格式
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(date)) {
+      return NextResponse.json({ error: '日期格式无效，请使用 YYYY-MM-DD 格式' }, { status: 400 });
+    }
+
+    // 从日期中提取年月，并确保月份是整数（去掉前导零）
+    const [year, monthWithZero] = date.split('-');
+    const month = parseInt(monthWithZero, 10);
+
+    if (isNaN(month) || month < 1 || month > 12) {
+      return NextResponse.json({ error: '月份无效，必须是 1-12 之间的数字' }, { status: 400 });
+    }
+    
+    console.log('开始获取 Nintendo Museum 日历数据...');
+    console.log('目标日期:', date);
+    console.log('年份:', year);
+    console.log('月份:', month);
+    console.log('使用的 XSRF Token:', process.env.XSRF_TOKEN);
+    console.log('使用的 Cookie:', process.env.COOKIE);
+    
     const response = await fetch(
-      "https://museum-tickets.nintendo.com/en/api/calendar?target_year=2025&target_month=6",
+      `https://museum-tickets.nintendo.com/en/api/calendar?target_year=${year}&target_month=${month}`,
       {
         headers: {
           "accept": "application/json, text/plain, */*",
@@ -31,17 +56,35 @@ export async function GET() {
       }
     );
 
-    console.log('API 响应状态:', response.status);
-    const {data} = await response.json();
-    // console.log('原始数据:', JSON.stringify(data, null, 2));
-    // 过滤出2025年5月29日的数据
-    const targetDate = '2025-06-29';
-    const filteredData: CalendarDay = data.calendar[targetDate];
-    console.log('过滤后的数据:', JSON.stringify(filteredData, null, 2));
-    const _canApply = canApply(filteredData);
-    return NextResponse.json({ canApply: _canApply, message: _canApply ? '🎉🎊 快买! ✨' : '😔 暂时不可以买 ❌', data: filteredData });
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API响应错误:', errorText);
+      throw new Error(`API请求失败: ${response.status} ${errorText}`);
+    }
+
+    const data: CalendarData = await response.json();
+    const dayData: CalendarDay | undefined = data.data.calendar[date];
+
+    if (!dayData) {
+      return NextResponse.json({ 
+        error: `未找到日期 ${date} 的数据`,
+        availableDates: Object.keys(data.data.calendar)
+      }, { status: 404 });
+    }
+
+    const _canApply = canApply(dayData);
+    return NextResponse.json({ 
+      message: _canApply ? '🎉🎊 快买! ✨' : '😔 暂时不可以买 ❌',
+      date: date,
+      canApply: _canApply,
+      data: dayData,
+    });
+
   } catch (error) {
     console.error('获取日历数据时出错:', error);
-    return NextResponse.json({ error: 'Failed to fetch calendar data' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Failed to fetch calendar data',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 } 
