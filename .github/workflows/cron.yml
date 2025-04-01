@@ -9,8 +9,20 @@ jobs:
   cron:
     runs-on: ubuntu-latest
     steps:
-      - name: Call API
+      - name: Check 2025-06-28
         run: |
-          echo "开始执行定时任务..."
-          curl -H "Authorization: Bearer ${{ secrets.CRON_SECRET_KEY }}" https://fetch-nintendo-calendar.vercel.app/api/cron
+          echo "开始执行6/28任务..."
+          curl -H "Authorization: Bearer ${{ secrets.CRON_SECRET_KEY }}" "https://fetch-nintendo-calendar.vercel.app/api/cron?targetDate=2025-06-28"
+          echo "定时任务执行完成"
+      
+      - name: Check 2025-06-29
+        run: |
+          echo "开始执行6/29任务..."
+          curl -H "Authorization: Bearer ${{ secrets.CRON_SECRET_KEY }}" "https://fetch-nintendo-calendar.vercel.app/api/cron?targetDate=2025-06-29"
+          echo "定时任务执行完成"
+      
+      - name: Check 2025-06-30
+        run: |
+          echo "开始执行6/30任务..."
+          curl -H "Authorization: Bearer ${{ secrets.CRON_SECRET_KEY }}" "https://fetch-nintendo-calendar.vercel.app/api/cron?targetDate=2025-06-30"
           echo "定时任务执行完成" 
