@@ -1,3 +1,5 @@
+import { canApply } from '@/app/util';
+import { CalendarDay } from '@/types/calendar';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -7,7 +9,7 @@ export async function GET() {
 
   try {
     const response = await fetch(
-      "https://museum-tickets.nintendo.com/en/api/calendar?target_year=2025&target_month=5",
+      "https://museum-tickets.nintendo.com/en/api/calendar?target_year=2025&target_month=6",
       {
         headers: {
           "accept": "application/json, text/plain, */*",
@@ -30,10 +32,14 @@ export async function GET() {
     );
 
     console.log('API 响应状态:', response.status);
-    const data = await response.json();
-    console.log('获取到的数据:', JSON.stringify(data, null, 2));
-    
-    return NextResponse.json(data);
+    const {data} = await response.json();
+    // console.log('原始数据:', JSON.stringify(data, null, 2));
+    // 过滤出2025年5月29日的数据
+    const targetDate = '2025-06-29';
+    const filteredData: CalendarDay = data.calendar[targetDate];
+    console.log('过滤后的数据:', JSON.stringify(filteredData, null, 2));
+    const _canApply = canApply(filteredData);
+    return NextResponse.json({ canApply: _canApply, message: _canApply ? '🎉🎊 快买! ✨' : '😔 暂时不可以买 ❌', data: filteredData });
   } catch (error) {
     console.error('获取日历数据时出错:', error);
     return NextResponse.json({ error: 'Failed to fetch calendar data' }, { status: 500 });

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import TelegramBot from 'node-telegram-bot-api';
-
+import { CalendarDay } from '@/types/calendar';
+import { canApply } from '@/app/util';    
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization');
   console.log('收到的认证头:', authHeader);
@@ -18,7 +19,7 @@ export async function GET(request: Request) {
     console.log('使用的 Cookie:', process.env.COOKIE);
     
     const response = await fetch(
-      "https://museum-tickets.nintendo.com/en/api/calendar?target_year=2025&target_month=5",
+      "https://museum-tickets.nintendo.com/en/api/calendar?target_year=2025&target_month=6",
       {
         headers: {
           "accept": "application/json, text/plain, */*",
@@ -53,8 +54,8 @@ export async function GET(request: Request) {
     // console.log('原始数据:', JSON.stringify(data, null, 2));
     
     // 过滤出2025年5月29日的数据
-    const targetDate = '2025-05-29';
-    const filteredData = data.calendar[targetDate];
+    const targetDate = '2025-06-29';
+    const filteredData: CalendarDay = data.calendar[targetDate];
     
     console.log('过滤后的数据:', JSON.stringify(filteredData, null, 2));
 
@@ -69,7 +70,8 @@ export async function GET(request: Request) {
     await bot.sendMessage(process.env.TELEGRAM_CHAT_ID || '', message);
     console.log('Telegram 消息已发送');
 
-    return NextResponse.json({ success: true, data: filteredData });
+    const _canApply = canApply(filteredData);
+    return NextResponse.json({ success: true, data: filteredData, canApply: _canApply, message: _canApply ? '🎉🎊 快买! ✨' : '😔 暂时不可以买 ❌',});
   } catch (error) {
     console.error('执行定时任务时出错:', error);
     if (error instanceof Error) {
