@@ -2,6 +2,20 @@ import { NextResponse } from 'next/server';
 import TelegramBot from 'node-telegram-bot-api';
 import { CalendarDay } from '@/types/calendar';
 import { canApply } from '@/app/util';    
+
+// 创建 Telegram Bot 实例
+const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN || '', { polling: false });
+
+// 发送 Telegram 消息的辅助函数
+async function sendTelegramMessage(message: string) {
+  try {
+    await bot.sendMessage(process.env.TELEGRAM_CHAT_ID || '', message);
+    console.log('Telegram 消息已发送');
+  } catch (error) {
+    console.error('发送 Telegram 消息失败:', error);
+  }
+}
+
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization');
   console.log('收到的认证头:', authHeader);
@@ -51,33 +65,36 @@ export async function GET(request: Request) {
     }
 
     const {data} = await response.json();
-    // console.log('原始数据:', JSON.stringify(data, null, 2));
     
-    // 过滤出2025年5月29日的数据
     const targetDate = '2025-06-29';
     const filteredData: CalendarDay = data.calendar[targetDate];
     
     console.log('过滤后的数据:', JSON.stringify(filteredData, null, 2));
 
-    // 发送 Telegram 消息
-    console.log('准备发送 Telegram 消息...');
-    console.log('Telegram Bot Token:', process.env.TELEGRAM_BOT_TOKEN);
-    console.log('Telegram Chat ID:', process.env.TELEGRAM_CHAT_ID);
-    
-    const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN || '', { polling: false });
-    const message = `🎮 Nintendo Museum 日历更新 (${targetDate})\n\n${JSON.stringify(filteredData, null, 2)}`;
-    
-    await bot.sendMessage(process.env.TELEGRAM_CHAT_ID || '', message);
-    console.log('Telegram 消息已发送');
-
     const _canApply = canApply(filteredData);
-    return NextResponse.json({ success: true, data: filteredData, canApply: _canApply, message: _canApply ? '🎉🎊 快买! ✨' : '😔 暂时不可以买 ❌',});
+    
+    // 只在可以购买时发送通知
+    if (_canApply) {
+      const message = `🎉 可以购买啦！\n\n日期: ${targetDate}\n\n详细信息:\n${JSON.stringify(filteredData, null, 2)}\n\n🎊 快去买票吧！✨`;
+      await sendTelegramMessage(message);
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      data: filteredData, 
+      canApply: _canApply, 
+      message: _canApply ? '🎉🎊 快买! ✨' : '😔 暂时不可以买 ❌',
+    });
   } catch (error) {
     console.error('执行定时任务时出错:', error);
-    if (error instanceof Error) {
-      console.error('错误详情:', error.message);
-      console.error('错误堆栈:', error.stack);
-    }
-    return NextResponse.json({ error: 'Failed to fetch calendar data', details: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
+    
+    // 发送错误通知
+    const errorMessage = `❌ 任务执行出错\n\n错误信息: ${error instanceof Error ? error.message : '未知错误'}\n\n时间: ${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}`;
+    await sendTelegramMessage(errorMessage);
+
+    return NextResponse.json({ 
+      error: 'Failed to fetch calendar data', 
+      details: error instanceof Error ? error.message : 'Unknown error' 
+    }, { status: 500 });
   }
 } 
