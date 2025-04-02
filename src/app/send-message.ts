@@ -66,8 +66,19 @@ const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN || '', { polling: fal
 
 // 修改发送消息的函数
 export async function sendTelegramMessage(message: string) {
-    console.log('sendTelegramMessage', message);
+  console.log('开始发送 Telegram 消息...');
+  console.log('Bot Token:', process.env.TELEGRAM_BOT_TOKEN?.slice(0, 10) + '...');  // 只显示前10位
+  console.log('Chat ID:', process.env.TELEGRAM_CHAT_ID);
+  
   try {
+    // 检查环境变量
+    if (!process.env.TELEGRAM_BOT_TOKEN) {
+      throw new Error('TELEGRAM_BOT_TOKEN 未设置');
+    }
+    if (!process.env.TELEGRAM_CHAT_ID) {
+      throw new Error('TELEGRAM_CHAT_ID 未设置');
+    }
+
     // 检查消息是否可以发送
     const { canSend, isNewMessage } = messageQueue.add(message);
     
@@ -81,9 +92,17 @@ export async function sendTelegramMessage(message: string) {
       return;
     }
 
-    await bot.sendMessage(process.env.TELEGRAM_CHAT_ID || '', message);
-    console.log('Telegram 消息已发送');
+    // 创建新的 bot 实例（避免可能的连接问题）
+    const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: false });
+    
+    console.log('准备发送消息到 Telegram...');
+    await bot.sendMessage(process.env.TELEGRAM_CHAT_ID, message);
+    console.log('Telegram 消息发送成功');
   } catch (error) {
     console.error('发送 Telegram 消息失败:', error);
+    if (error instanceof Error) {
+      console.error('错误详情:', error.message);
+      console.error('错误堆栈:', error.stack);
+    }
   }
 }
