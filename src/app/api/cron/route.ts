@@ -13,14 +13,18 @@ export async function GET(request: Request) {
     const date = searchParams.get('date') || '2025-06-29';
     const forceSend = searchParams.get('forceSend') === 'true';
 
+    console.log('参数:', { date, forceSend });
+
     // 调用 calendar API
     const calendarResponse = await fetch(`${request.url.split('/api/')[0]}/api/calendar?date=${date}`);
+    console.log('Calendar API 响应状态:', calendarResponse.status);
 
     if (!calendarResponse.ok) {
       throw new Error(`Calendar API 请求失败: ${calendarResponse.status}`);
     }
 
     const calendarData = await calendarResponse.json();
+    console.log('Calendar API 响应数据:', calendarData);
     
     // 根据返回结果发送消息
     if (calendarData.canApply || forceSend) {
@@ -31,8 +35,14 @@ export async function GET(request: Request) {
       const message = `${status}\n\n日期: ${date}\n\n详细信息:\n${JSON.stringify(calendarData.data, null, 2)}\n\n${calendarData.canApply ? '🎊 快去买票吧！✨' : '❌ 继续等待'}`;
       
       console.log('消息内容:', message);
-      void sendTelegramMessage(message);
-      console.log('Telegram 消息发送请求已发出');
+      
+      // 修改这里，等待消息发送完成
+      try {
+        await sendTelegramMessage(message);
+        console.log('Telegram 消息发送完成');
+      } catch (sendError) {
+        console.error('Telegram 消息发送出错:', sendError);
+      }
     } else {
       console.log('不满足发送条件，跳过发送消息');
     }
@@ -44,7 +54,12 @@ export async function GET(request: Request) {
     
     // 发送错误通知
     const errorMessage = `❌ 任务执行出错\n\n错误信息: ${error instanceof Error ? error.message : '未知错误'}\n\n时间: ${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}`;
-    void sendTelegramMessage(errorMessage);
+    try {
+      await sendTelegramMessage(errorMessage);
+      console.log('错误通知发送完成');
+    } catch (sendError) {
+      console.error('错误通知发送失败:', sendError);
+    }
 
     return NextResponse.json({ 
       error: 'Failed to fetch calendar data', 
