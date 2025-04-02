@@ -71,9 +71,11 @@ const messageQueue = new MessageQueue();
 
 // 修改发送消息的函数
 export async function sendTelegramMessage(message: string) {
-  console.log('开始发送 Telegram 消息...');
-  console.log('Bot Token:', process.env.TELEGRAM_BOT_TOKEN?.slice(0, 10) + '...');
-  console.log('Chat ID:', process.env.TELEGRAM_CHAT_ID);
+  console.log('==== Telegram 消息发送开始 ====');
+  console.log('当前时间:', new Date().toISOString());
+  console.log('环境:', process.env.NODE_ENV);
+  console.log('Bot Token 是否存在:', !!process.env.TELEGRAM_BOT_TOKEN);
+  console.log('Chat ID 是否存在:', !!process.env.TELEGRAM_CHAT_ID);
   
   try {
     // 检查环境变量
@@ -86,6 +88,7 @@ export async function sendTelegramMessage(message: string) {
 
     // 检查消息是否可以发送
     const { canSend, isNewMessage } = messageQueue.add(message);
+    console.log('消息检查结果:', { canSend, isNewMessage });
     
     if (!isNewMessage) {
       console.log('消息已在队列中，跳过发送');
@@ -97,31 +100,44 @@ export async function sendTelegramMessage(message: string) {
       return;
     }
 
-    // 使用 fetch 发送消息
+    // 准备发送请求
     const url = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
+    console.log('准备发送请求到 Telegram API');
+    
+    const requestBody = {
+      chat_id: process.env.TELEGRAM_CHAT_ID,
+      text: message,
+      parse_mode: 'HTML'
+    };
+    console.log('请求体:', JSON.stringify(requestBody, null, 2));
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        chat_id: process.env.TELEGRAM_CHAT_ID,
-        text: message,
-        parse_mode: 'HTML'
-      })
+      body: JSON.stringify(requestBody)
     });
 
+    console.log('Telegram API 响应状态:', response.status);
+    const responseData = await response.text();
+    console.log('Telegram API 响应内容:', responseData);
+
     if (!response.ok) {
-      const errorData = await response.text();
-      throw new Error(`Telegram API 错误: ${response.status} ${errorData}`);
+      throw new Error(`Telegram API 错误: ${response.status} ${responseData}`);
     }
 
     console.log('Telegram 消息发送成功');
   } catch (error) {
-    console.error('发送 Telegram 消息失败:', error);
+    console.error('==== Telegram 消息发送失败 ====');
+    console.error('错误类型:', error instanceof Error ? error.constructor.name : typeof error);
     if (error instanceof Error) {
-      console.error('错误详情:', error.message);
+      console.error('错误消息:', error.message);
       console.error('错误堆栈:', error.stack);
+    } else {
+      console.error('未知错误:', error);
     }
+  } finally {
+    console.log('==== Telegram 消息发送结束 ====');
   }
 }
