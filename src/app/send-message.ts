@@ -1,5 +1,3 @@
-import TelegramBot from "node-telegram-bot-api";
-
 // 创建一个消息队列类来管理消息
 class MessageQueue {
   private messages: Set<string>;
@@ -61,13 +59,10 @@ class MessageQueue {
 // 创建消息队列实例
 const messageQueue = new MessageQueue();
 
-// 创建 Telegram Bot 实例
-const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN || '', { polling: false });
-
 // 修改发送消息的函数
 export async function sendTelegramMessage(message: string) {
   console.log('开始发送 Telegram 消息...');
-  console.log('Bot Token:', process.env.TELEGRAM_BOT_TOKEN?.slice(0, 10) + '...');  // 只显示前10位
+  console.log('Bot Token:', process.env.TELEGRAM_BOT_TOKEN?.slice(0, 10) + '...');
   console.log('Chat ID:', process.env.TELEGRAM_CHAT_ID);
   
   try {
@@ -92,11 +87,25 @@ export async function sendTelegramMessage(message: string) {
       return;
     }
 
-    // 创建新的 bot 实例（避免可能的连接问题）
-    const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: false });
-    
-    console.log('准备发送消息到 Telegram...');
-    await bot.sendMessage(process.env.TELEGRAM_CHAT_ID, message);
+    // 使用 fetch 替代 node-telegram-bot-api
+    const url = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        chat_id: process.env.TELEGRAM_CHAT_ID,
+        text: message,
+        parse_mode: 'HTML'
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(`Telegram API 错误: ${response.status} ${errorData}`);
+    }
+
     console.log('Telegram 消息发送成功');
   } catch (error) {
     console.error('发送 Telegram 消息失败:', error);
