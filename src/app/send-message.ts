@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 // 使用 Map 来存储消息和时间戳
 class MessageQueue {
   private messages: Map<string, number>;
@@ -111,21 +113,14 @@ export async function sendTelegramMessage(message: string) {
     };
     console.log('请求体:', JSON.stringify(requestBody, null, 2));
 
-    const response = await fetch(url, {
-      method: 'POST',
+    const response = await axios.post(url, requestBody, {
       headers: {
         'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody)
+      }
     });
 
     console.log('Telegram API 响应状态:', response.status);
-    const responseData = await response.text();
-    console.log('Telegram API 响应内容:', responseData);
-
-    if (!response.ok) {
-      throw new Error(`Telegram API 错误: ${response.status} ${responseData}`);
-    }
+    console.log('Telegram API 响应内容:', JSON.stringify(response.data, null, 2));
 
     console.log('Telegram 消息发送成功');
   } catch (error) {
@@ -136,6 +131,12 @@ export async function sendTelegramMessage(message: string) {
       console.error('错误堆栈:', error.stack);
     } else {
       console.error('未知错误:', error);
+    }
+    
+    // 如果是 axios 错误，输出更详细的信息
+    if (axios.isAxiosError(error)) {
+      console.error('请求配置:', error.config);
+      console.error('响应数据:', error.response?.data);
     }
   } finally {
     console.log('==== Telegram 消息发送结束 ====');
