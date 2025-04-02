@@ -2,16 +2,6 @@ import { NextResponse } from 'next/server';
 import { sendTelegramMessage } from '@/app/send-message';
 
 export async function GET(request: Request) {
-  const authHeader = request.headers.get('authorization');
-  console.log('收到的认证头:', authHeader);
-  console.log('期望的认证头:', `Bearer ${process.env.CRON_SECRET_KEY}`);
-  
-  // 验证请求是否来自 Cron
-  if (!authHeader?.includes(process.env.CRON_SECRET_KEY || '')) {
-    console.log('认证失败');
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   try {
     // 从 URL 获取参数
     const { searchParams } = new URL(request.url);
@@ -19,11 +9,7 @@ export async function GET(request: Request) {
     const forceSend = searchParams.get('forceSend') === 'true';
 
     // 调用 calendar API
-    const calendarResponse = await fetch(`${request.url.split('/api/')[0]}/api/calendar?date=${date}`, {
-      headers: {
-        "Authorization": authHeader,
-      }
-    });
+    const calendarResponse = await fetch(`${request.url.split('/api/')[0]}/api/calendar?date=${date}`);
 
     if (!calendarResponse.ok) {
       throw new Error(`Calendar API 请求失败: ${calendarResponse.status}`);

@@ -9,7 +9,6 @@
 3. 在 Vercel 项目设置中添加以下环境变量：
    - `XSRF_TOKEN`: Nintendo Museum 网站的 XSRF token
    - `COOKIE`: Nintendo Museum 网站的 cookie
-   - `CRON_SECRET_KEY`: 用于验证定时任务请求的密钥
 
 ## 设置定时任务
 
@@ -35,7 +34,6 @@
    ```
    XSRF_TOKEN=your-xsrf-token
    COOKIE=your-cookie
-   CRON_SECRET_KEY=your-cron-secret-key
    ```
 
 3. 运行开发服务器：
