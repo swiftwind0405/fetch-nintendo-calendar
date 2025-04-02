@@ -1,12 +1,12 @@
-// 创建一个消息队列类来管理消息
+// 使用 Map 来存储消息和时间戳
 class MessageQueue {
-  private messages: Set<string>;
+  private messages: Map<string, number>;
   private expirationTime: number; // 消息过期时间（毫秒）
   private lastSentTime: number; // 上次发送时间
   private rateLimitMs: number; // 限流时间（毫秒）
 
   constructor(expirationTimeMs: number = 30 * 60 * 1000, rateLimitMs: number = 5000) {
-    this.messages = new Set();
+    this.messages = new Map();
     this.expirationTime = expirationTimeMs;
     this.lastSentTime = 0;
     this.rateLimitMs = rateLimitMs;
@@ -22,23 +22,32 @@ class MessageQueue {
     return false;
   }
 
+  // 清理过期消息
+  private cleanExpiredMessages() {
+    const now = Date.now();
+    for (const [message, timestamp] of this.messages.entries()) {
+      if (now - timestamp >= this.expirationTime) {
+        this.messages.delete(message);
+      }
+    }
+  }
+
   // 添加消息到队列
   add(message: string): { canSend: boolean; isNewMessage: boolean } {
+    // 清理过期消息
+    this.cleanExpiredMessages();
+
+    const now = Date.now();
     const isNewMessage = !this.messages.has(message);
     
     if (!isNewMessage) {
-      return { canSend: false, isNewMessage: false }; // 消息已存在
+      return { canSend: false, isNewMessage: false };
     }
 
     const canSendNow = this.canSend();
     
     if (canSendNow) {
-      this.messages.add(message);
-      
-      // 设置过期时间后自动删除消息
-      setTimeout(() => {
-        this.messages.delete(message);
-      }, this.expirationTime);
+      this.messages.set(message, now);
     }
     
     return { canSend: canSendNow, isNewMessage: true };
@@ -46,6 +55,7 @@ class MessageQueue {
 
   // 检查消息是否存在
   has(message: string): boolean {
+    this.cleanExpiredMessages();
     return this.messages.has(message);
   }
 
@@ -87,7 +97,7 @@ export async function sendTelegramMessage(message: string) {
       return;
     }
 
-    // 使用 fetch 替代 node-telegram-bot-api
+    // 使用 fetch 发送消息
     const url = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
     const response = await fetch(url, {
       method: 'POST',
