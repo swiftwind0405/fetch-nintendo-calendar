@@ -10,19 +10,6 @@
    - `XSRF_TOKEN`: Nintendo Museum 网站的 XSRF token
    - `COOKIE`: Nintendo Museum 网站的 cookie
 
-## 设置定时任务
-
-在 Vercel 项目设置中：
-
-1. 进入 "Settings" > "Cron Jobs"
-2. 添加新的定时任务：
-   - Path: `/api/cron`
-   - Schedule: `*/30 * * * *` (每30分钟执行一次)
-   - HTTP Headers: 
-     ```
-     Authorization: Bearer your-cron-secret-key
-     ```
-
 ## 本地开发
 
 1. 安装依赖：
