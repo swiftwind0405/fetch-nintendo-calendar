@@ -3,10 +3,12 @@ name: Nintendo Museum Calendar Check
 on:
   schedule:
     - cron: '*/30 * * * *'  # 每30分钟执行一次
+    - cron: '0 11-16 * * *'  # 每天11点到16点的整点触发
   workflow_dispatch:  # 允许手动触发
 
 jobs:
-  cron:
+  regular-check:
+    if: github.event.schedule == '*/30 * * * *'
     runs-on: ubuntu-latest
     steps:
       - name: Check 2025-06-28
@@ -18,11 +20,21 @@ jobs:
       - name: Check 2025-06-29
         run: |
           echo "开始执行6/29任务..."
-          curl "https://fetch-nintendo-calendar.vercel.app/api/calendar?date=2025-06-29&forceSend=true"
+          curl "https://fetch-nintendo-calendar.vercel.app/api/calendar?date=2025-06-29"
           echo "定时任务执行完成"
       
       - name: Check 2025-06-30
         run: |
           echo "开始执行6/30任务..."
           curl "https://fetch-nintendo-calendar.vercel.app/api/calendar?date=2025-06-30"
-          echo "定时任务执行完成" 
+          echo "定时任务执行完成"
+
+  hourly-force-check:
+    if: github.event.schedule == '0 11-16 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Force Check 2025-06-29
+        run: |
+          echo "开始执行6/29强制发送任务..."
+          curl "https://fetch-nintendo-calendar.vercel.app/api/calendar?date=2025-06-29&forceSend=true"
+          echo "定时任务执行完成"
