@@ -3,7 +3,7 @@ name: Nintendo Museum Calendar Check
 on:
   schedule:
     - cron: '*/30 * * * *'  # 每30分钟执行一次
-    - cron: '0 11-16 * * *'  # 每天11点到16点的整点触发
+    - cron: '0 9 * * *'  # 9的整点触发
   workflow_dispatch:  # 允许手动触发
 
 jobs:
@@ -30,7 +30,7 @@ jobs:
           echo "定时任务执行完成"
 
   hourly-force-check:
-    if: github.event.schedule == '0 11-16 * * *'
+    if: github.event.schedule == '0 9 * * *'
     runs-on: ubuntu-latest
     steps:
       - name: Force Check 2025-06-29
