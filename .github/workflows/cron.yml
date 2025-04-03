@@ -18,7 +18,7 @@ jobs:
       - name: Check 2025-06-29
         run: |
           echo "开始执行6/29任务..."
-          curl "https://fetch-nintendo-calendar.vercel.app/api/calendar?date=2025-06-29"
+          curl "https://fetch-nintendo-calendar.vercel.app/api/calendar?date=2025-06-29&forceSend=true"
           echo "定时任务执行完成"
       
       - name: Check 2025-06-30
