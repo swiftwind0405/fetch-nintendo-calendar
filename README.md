@@ -1,5 +1,9 @@
 # Nintendo Museum Calendar Fetcher
 
+✌️，购买成功：
+![image](https://github.com/user-attachments/assets/7e3cf75b-2a7d-442a-8acc-a86569eef398)
+
+
 这个应用每30分钟自动获取 Nintendo Museum 的日历数据。
 
 ## 部署到 Vercel
